@@ -17,7 +17,7 @@ class InstagramClient:
             params = {
                 "access_token": access_token,
                 "fields": "id,caption,media_url,permalink,timestamp,media_type,like_count,comments_count",
-                "limit": 2
+                "limit": 5
             }
             url = f"https://graph.instagram.com/{version_api}/me/media"
             response = requests.get(url=url, params=params)

@@ -3,18 +3,22 @@ services:
     build:
       context: .
     container_name: test_task_api
-    command: python manage.py runserver 0.0.0.0:8000
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
     volumes:
       - .:/app
     ports:
       - "8000:8000"
     env_file:
       - .env
-    depends_on:
-      - db
     environment:
       - POSTGRES_HOST=db
       - POSTGRES_PORT=5432
+    depends_on:
+      - db
+    networks:
+      - drf_network
 
   db:
     container_name: test_db
@@ -26,9 +30,15 @@ services:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
+    networks:
+      - drf_network
     volumes:
       - "db_data:/var/lib/postgresql/data"
 
 
 volumes:
   db_data:
+
+networks:
+  drf_network:
+    driver: bridge
