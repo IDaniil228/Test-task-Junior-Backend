@@ -19,6 +19,10 @@ load_dotenv()
 class PostUpsertView(APIView):
 
     def setup(self, request, *args, **kwargs):
+        """
+        Инициализирует зависимости для работы представления.
+        Создает экземпляр PostService, передавая ему репозиторий и клиент Instagram.
+        """
         super().setup(request, *args, **kwargs)
         self.post_service = PostService(
             post_repository=PostRepository(),
@@ -26,6 +30,11 @@ class PostUpsertView(APIView):
         )
 
     def post(self, request):
+        """
+        Обрабатывает POST-запрос на обновление и сохранение постов из Instagram.
+        Получает токен доступа из переменных окружения и инициирует процесс
+        синхронизации данных в базе данных через сервисный слой.
+        """
         access_token = os.environ.get("ACCESS_TOKEN")
         queryset = self.post_service.update_posts(access_token=access_token)
         return Response(
@@ -42,6 +51,10 @@ class PostListView(APIView):
     pagination_class = PostCursorPagination
 
     def setup(self, request, *args, **kwargs):
+        """
+        Подготавливает зависимости перед выполнением запроса.
+        Настраивает сервисный слой для работы с постами.
+        """
         super().setup(request, *args, **kwargs)
         self.post_service = PostService(
             post_repository=PostRepository(),
@@ -49,6 +62,11 @@ class PostListView(APIView):
         )
 
     def get(self, request):
+        """
+        Обрабатывает GET-запрос для получения списка всех сохраненных постов.
+        Поддерживает курсорную пагинацию (PostCursorPagination) для эффективного
+        листания больших списков данных.
+        """
         queryset = self.post_service.get_all_posts()
         paginator = self.pagination_class()
         page = paginator.paginate_queryset(queryset, request, view=self)
@@ -60,9 +78,13 @@ class PostListView(APIView):
         serializer = PostSerializer(queryset, many=True)
         return Response(serializer.data)
 
+
 class SendCommentView(APIView):
 
     def setup(self, request, *args, **kwargs):
+        """
+        Инициализирует сервисы, необходимые для отправки комментариев.
+        """
         super().setup(request, *args, **kwargs)
         self.post_service = PostService(
             post_repository=PostRepository(),
@@ -70,27 +92,32 @@ class SendCommentView(APIView):
         )
 
     def post(self, request, post_id):
+        """
+        Обрабатывает POST-запрос для отправки нового комментария к посту.
+        Проверяет входящие данные на валидность, отправляет сообщение в Instagram
+        и сохраняет созданный комментарий в локальную базу данных.
+        """
         access_token = os.environ.get("ACCESS_TOKEN")
-        serializers = CommentCreateSerializer(data=request.data)
-        if not serializers.is_valid():
+        serializer = CommentCreateSerializer(data=request.data)
+        if not serializer.is_valid():
             return Response(
                 {
                     "status": "error",
-                    "detail" : serializers.errors
+                    "detail": serializer.errors
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         comment = self.post_service.save_comments(
             access_token=access_token,
-            message=serializers.data['message'],
+            message=serializer.data['message'],
             post_id=post_id
         )
-        serializers = CommentSerializer(comment)
+        serializer = CommentSerializer(comment)
         return Response(
             {
                 "status": "success",
-                "data": serializers.data
+                "data": serializer.data
             },
             status=status.HTTP_201_CREATED
         )

@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from urllib.error import HTTPError
 
 from django.db.models import QuerySet
 from rest_framework.exceptions import APIException
